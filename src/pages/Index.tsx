@@ -1,21 +1,60 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Icon from "@/components/ui/icon";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loginData, setLoginData] = useState({ username: "", password: "" });
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const { toast } = useToast();
+
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     element?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loginData.username && loginData.password) {
+      setIsLoggedIn(true);
+      toast({
+        title: "Вход выполнен!",
+        description: "Добро пожаловать в личный кабинет",
+      });
+    }
+  };
+
+  const handlePayment = (method: string) => {
+    toast({
+      title: "Платёж обрабатывается",
+      description: `Оплата через ${method === 'card' ? 'карту' : 'номер телефона'}`,
+    });
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Скопировано!",
+      description: `${label} скопирован в буфер обмена`,
+    });
+  };
+
   const pricingPlans = [
     {
+      id: "50",
       title: "Прайс 50",
       price: "50 000 ₽",
       deposit: "5 000 ₽",
       features: ["Базовый пакет", "Технический саппорт", "Быстрый вывод средств"]
     },
     {
+      id: "100",
       title: "Прайс 100",
       price: "100 000 ₽",
       deposit: "10 000 ₽",
@@ -23,6 +62,7 @@ const Index = () => {
       popular: true
     },
     {
+      id: "200",
       title: "Прайс 200",
       price: "200 000 ₽",
       deposit: "20 000 ₽",
@@ -31,7 +71,7 @@ const Index = () => {
   ];
 
   const partners = [
-    { name: "UO X", logo: "💎" },
+    { name: "UPX", logo: "💎" },
     { name: "Vavada", logo: "🎰" },
     { name: "LuckyDuck", logo: "🦆" },
     { name: "1WIN", logo: "🏆" }
@@ -54,6 +94,189 @@ const Index = () => {
       rating: 5
     }
   ];
+
+  if (isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+        <nav className="fixed top-0 w-full bg-background/80 backdrop-blur-lg border-b border-border z-50">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-primary">ЗАЛИВЫ PRO</h1>
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-muted-foreground">Личный кабинет</span>
+                <Button variant="outline" onClick={() => setIsLoggedIn(false)}>
+                  <Icon name="LogOut" className="mr-2" size={16} />
+                  Выход
+                </Button>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        <div className="container mx-auto px-4 pt-24 pb-12">
+          <div className="max-w-5xl mx-auto animate-fade-in">
+            <div className="mb-8">
+              <h2 className="text-4xl font-bold mb-2">Добро пожаловать!</h2>
+              <p className="text-muted-foreground">Выберите тариф и произведите оплату</p>
+            </div>
+
+            <div className="grid lg:grid-cols-3 gap-6 mb-8">
+              {pricingPlans.map((plan) => (
+                <Card 
+                  key={plan.id}
+                  className={`cursor-pointer transition-all duration-300 hover:scale-105 ${
+                    selectedPlan === plan.id ? 'border-primary shadow-lg shadow-primary/20' : ''
+                  } ${plan.popular ? 'border-primary/50' : ''}`}
+                  onClick={() => setSelectedPlan(plan.id)}
+                >
+                  {plan.popular && (
+                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                      <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold">
+                        ПОПУЛЯРНЫЙ
+                      </span>
+                    </div>
+                  )}
+                  <CardHeader>
+                    <CardTitle className="text-xl">{plan.title}</CardTitle>
+                    <CardDescription className="text-2xl font-bold text-foreground mt-2">
+                      {plan.price}
+                    </CardDescription>
+                    <p className="text-primary font-semibold text-sm">Депозит: {plan.deposit}</p>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2">
+                      {plan.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-center gap-2 text-sm">
+                          <Icon name="CheckCircle2" className="text-primary" size={16} />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {selectedPlan && (
+              <Card className="animate-scale-in">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Icon name="CreditCard" size={24} />
+                    Оплата выбранного тарифа
+                  </CardTitle>
+                  <CardDescription>
+                    Выбран тариф: {pricingPlans.find(p => p.id === selectedPlan)?.title}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue="card" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="card">
+                        <Icon name="CreditCard" className="mr-2" size={16} />
+                        По карте
+                      </TabsTrigger>
+                      <TabsTrigger value="phone">
+                        <Icon name="Phone" className="mr-2" size={16} />
+                        По телефону
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="card" className="space-y-4 mt-6">
+                      <div className="space-y-2">
+                        <Label>Номер карты для перевода</Label>
+                        <div className="flex gap-2">
+                          <Input 
+                            value="2200 7019 3663 7526" 
+                            readOnly 
+                            className="font-mono text-lg"
+                          />
+                          <Button 
+                            onClick={() => copyToClipboard("2200701936637526", "Номер карты")}
+                            variant="outline"
+                          >
+                            <Icon name="Copy" size={18} />
+                          </Button>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Переведите {pricingPlans.find(p => p.id === selectedPlan)?.deposit} на указанную карту
+                        </p>
+                      </div>
+                      <Button 
+                        className="w-full" 
+                        size="lg"
+                        onClick={() => handlePayment('card')}
+                      >
+                        <Icon name="CheckCircle" className="mr-2" size={20} />
+                        Я оплатил
+                      </Button>
+                    </TabsContent>
+
+                    <TabsContent value="phone" className="space-y-4 mt-6">
+                      <div className="space-y-2">
+                        <Label>Номер телефона для перевода</Label>
+                        <div className="flex gap-2">
+                          <Input 
+                            value="+7 (982) 214-16-78" 
+                            readOnly 
+                            className="font-mono text-lg"
+                          />
+                          <Button 
+                            onClick={() => copyToClipboard("79822141678", "Номер телефона")}
+                            variant="outline"
+                          >
+                            <Icon name="Copy" size={18} />
+                          </Button>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Переведите {pricingPlans.find(p => p.id === selectedPlan)?.deposit} на указанный номер
+                        </p>
+                      </div>
+                      <Button 
+                        className="w-full" 
+                        size="lg"
+                        onClick={() => handlePayment('phone')}
+                      >
+                        <Icon name="CheckCircle" className="mr-2" size={20} />
+                        Я оплатил
+                      </Button>
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            )}
+
+            <Card className="mt-8 border-primary/30 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Icon name="Headphones" size={24} />
+                  Связь с поддержкой
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button className="flex-1" size="lg" asChild>
+                    <a href="https://t.me/zalivypro" target="_blank" rel="noopener noreferrer">
+                      <Icon name="Send" className="mr-2" size={20} />
+                      Написать в Telegram
+                    </a>
+                  </Button>
+                  <Button className="flex-1" size="lg" variant="outline" asChild>
+                    <a href="mailto:support@zalivypro.com">
+                      <Icon name="Mail" className="mr-2" size={20} />
+                      Отправить Email
+                    </a>
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground mt-4 text-center">
+                  Поддержка работает 24/7 • Среднее время ответа: 5 минут
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -78,9 +301,46 @@ const Index = () => {
                 Контакты
               </button>
             </div>
-            <Button onClick={() => scrollToSection('contacts')}>
-              Связаться
-            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button>
+                  <Icon name="LogIn" className="mr-2" size={18} />
+                  Личный кабинет
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl">Вход в личный кабинет</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleLogin} className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Логин</Label>
+                    <Input
+                      id="username"
+                      placeholder="Введите логин"
+                      value={loginData.username}
+                      onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Пароль</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Введите пароль"
+                      value={loginData.password}
+                      onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" size="lg">
+                    <Icon name="LogIn" className="mr-2" size={20} />
+                    Войти
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </nav>
@@ -102,13 +362,49 @@ const Index = () => {
               ПРОФЕССИОНАЛЬНЫЕ ЗАЛИВЫ
             </h2>
             <p className="text-xl md:text-2xl text-muted-foreground mb-8">
-              Работаем с топовыми платформами: UO X, Vavada, LuckyDuck, 1WIN
+              Работаем с топовыми платформами: UPX, Vavada, LuckyDuck, 1WIN
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" onClick={() => scrollToSection('pricing')} className="text-lg">
-                <Icon name="TrendingUp" className="mr-2" size={20} />
-                Посмотреть тарифы
-              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button size="lg" className="text-lg">
+                    <Icon name="TrendingUp" className="mr-2" size={20} />
+                    Начать работу
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl">Вход в личный кабинет</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleLogin} className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="username2">Логин</Label>
+                      <Input
+                        id="username2"
+                        placeholder="Введите логин"
+                        value={loginData.username}
+                        onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password2">Пароль</Label>
+                      <Input
+                        id="password2"
+                        type="password"
+                        placeholder="Введите пароль"
+                        value={loginData.password}
+                        onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" size="lg">
+                      <Icon name="LogIn" className="mr-2" size={20} />
+                      Войти
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
               <Button size="lg" variant="outline" onClick={() => scrollToSection('contacts')} className="text-lg">
                 <Icon name="MessageCircle" className="mr-2" size={20} />
                 Получить консультацию
@@ -157,9 +453,45 @@ const Index = () => {
                       </li>
                     ))}
                   </ul>
-                  <Button className="w-full mt-6" variant={plan.popular ? "default" : "outline"}>
-                    Выбрать план
-                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button className="w-full mt-6" variant={plan.popular ? "default" : "outline"}>
+                        Выбрать план
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="text-2xl">Вход в личный кабинет</DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={handleLogin} className="space-y-4 mt-4">
+                        <div className="space-y-2">
+                          <Label htmlFor={`username-${index}`}>Логин</Label>
+                          <Input
+                            id={`username-${index}`}
+                            placeholder="Введите логин"
+                            value={loginData.username}
+                            onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`password-${index}`}>Пароль</Label>
+                          <Input
+                            id={`password-${index}`}
+                            type="password"
+                            placeholder="Введите пароль"
+                            value={loginData.password}
+                            onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <Button type="submit" className="w-full" size="lg">
+                          <Icon name="LogIn" className="mr-2" size={20} />
+                          Войти
+                        </Button>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
                 </CardContent>
               </Card>
             ))}
@@ -230,7 +562,7 @@ const Index = () => {
                 <div className="flex flex-col gap-6">
                   <div className="flex items-center gap-4 justify-center">
                     <Icon name="Send" className="text-primary" size={24} />
-                    <a href="https://t.me/username" className="text-xl hover:text-primary transition-colors">
+                    <a href="https://t.me/zalivypro" className="text-xl hover:text-primary transition-colors">
                       Telegram: @zalivypro
                     </a>
                   </div>
@@ -242,13 +574,15 @@ const Index = () => {
                   </div>
                   <div className="flex items-center gap-4 justify-center">
                     <Icon name="Phone" className="text-primary" size={24} />
-                    <span className="text-xl">+7 (XXX) XXX-XX-XX</span>
+                    <span className="text-xl">+7 (982) 214-16-78</span>
                   </div>
                 </div>
                 
-                <Button size="lg" className="w-full mt-8">
-                  <Icon name="MessageSquare" className="mr-2" size={20} />
-                  Написать в Telegram
+                <Button size="lg" className="w-full mt-8" asChild>
+                  <a href="https://t.me/zalivypro" target="_blank" rel="noopener noreferrer">
+                    <Icon name="MessageSquare" className="mr-2" size={20} />
+                    Написать в Telegram
+                  </a>
                 </Button>
               </CardContent>
             </Card>
